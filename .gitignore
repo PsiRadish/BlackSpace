@@ -245,3 +245,6 @@ ModelManifest.xml
 .fake/
 /BlackSpace/Key.snk
 /Visual Studio 2015/Visualizers/attribcache140.bin
+
+# Sublime Text
+*.sublime-*

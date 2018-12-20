@@ -35,20 +35,20 @@ namespace BlackSpace
         /// <summary>
         /// The layer of the adornment.
         /// </summary>
-        private readonly IAdornmentLayer layer;
+        private readonly IAdornmentLayer _layer;
 
         /// <summary>
         /// Text view where the adornment is created.
         /// </summary>
-        private readonly IWpfTextView view;
+        private readonly IWpfTextView _view;
 
         /// <summary>
         /// Adornment brushs.
         /// </summary>
-        private Brush spacesBrush;
-        private Pen spacesPen;
-        private Brush tabsBrush;
-        private Pen tabsPen;
+        private Brush _spacesBrush;
+        private Pen _spacesPen;
+        private Brush _tabsBrush;
+        private Pen _tabsPen;
 
         public static BlackSpaceOptionsPackage Package
         {
@@ -83,10 +83,10 @@ namespace BlackSpace
                 throw new ArgumentNullException("view");
             }
 
-            this.layer = view.GetAdornmentLayer("BlackSpaceTextAdornment");
+            this._layer = view.GetAdornmentLayer("BlackSpaceTextAdornment");
 
-            this.view = view;
-            this.view.LayoutChanged += this.OnLayoutChanged;
+            this._view = view;
+            this._view.LayoutChanged += this.OnLayoutChanged;
 
             if (Package != null)
             {
@@ -96,19 +96,19 @@ namespace BlackSpace
             else
             {
                 // Create the pen and brush to color the boxes around the end-of-line whitespace
-                spacesBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x95));
-                spacesBrush.Freeze();
+                _spacesBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x95));
+                _spacesBrush.Freeze();
                 var spacesPenBrush = new SolidColorBrush(Color.FromArgb(0xff, 0x2b, 0x00, 0xb5));
                 spacesPenBrush.Freeze();
-                spacesPen = new Pen(spacesPenBrush, 1.0);
-                spacesPen.Freeze();
+                _spacesPen = new Pen(spacesPenBrush, 1.0);
+                _spacesPen.Freeze();
 
-                tabsBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x65));
-                tabsBrush.Freeze();
+                _tabsBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x65));
+                _tabsBrush.Freeze();
                 var tabsPenBrush = new SolidColorBrush(Color.FromArgb(0xff, 0x3b, 0x00, 0x85));
                 tabsPenBrush.Freeze();
-                tabsPen = new Pen(tabsPenBrush, 1.0);
-                tabsPen.Freeze();
+                _tabsPen = new Pen(tabsPenBrush, 1.0);
+                _tabsPen.Freeze();
             }
         }
 
@@ -135,24 +135,25 @@ namespace BlackSpace
         /// <param name="line">Line to add the adornments</param>
         private void CreateVisuals(ITextViewLine line)
         {
-            IWpfTextViewLineCollection textViewLines = view.TextViewLines;
+            // Ignore empty lines
+            if (line.Length == 0)  return;
 
-            //Ignore empty lines
-            if (line.Length == 0) { return; }
+            // ++ RADISH: Ignore lines that are only whitespace
+            var lineText = new SnapshotSpan(_view.TextSnapshot, Span.FromBounds(line.Start, line.End)).GetText();
+            if (String.IsNullOrWhiteSpace(lineText))  return;
 
             // Loop through each character from end to beginning, and place a box around spaces and tabs at the end of lines
             for (int charIndex = line.End - 1; charIndex >= line.Start; --charIndex)
-            //for (int charIndex = line.Start; charIndex < line.End; charIndex++)
             {
-                bool bIsSpace = (view.TextSnapshot[charIndex] == ' ');
-                bool bIsTab = (view.TextSnapshot[charIndex] == '\t');
+                bool bIsSpace = (_view.TextSnapshot[charIndex] == ' ');
+                bool bIsTab = (_view.TextSnapshot[charIndex] == '\t');
                 if (bIsSpace || bIsTab)
                 {
-                    SnapshotSpan span = new SnapshotSpan(view.TextSnapshot, Span.FromBounds(charIndex, charIndex + 1));
-                    Geometry geometry = textViewLines.GetMarkerGeometry(span);
+                    var span = new SnapshotSpan(_view.TextSnapshot, Span.FromBounds(charIndex, charIndex + 1));
+                    Geometry geometry = _view.TextViewLines.GetMarkerGeometry(span);
                     if (geometry != null)
                     {
-                        var drawing = new GeometryDrawing(bIsSpace ? spacesBrush : tabsBrush, bIsSpace ? spacesPen : tabsPen, geometry);
+                        var drawing = new GeometryDrawing(bIsSpace ? _spacesBrush : _tabsBrush, bIsSpace ? _spacesPen : _tabsPen, geometry);
                         drawing.Freeze();
 
                         var drawingImage = new DrawingImage(drawing);
@@ -167,7 +168,7 @@ namespace BlackSpace
                         Canvas.SetLeft(image, geometry.Bounds.Left);
                         Canvas.SetTop(image, geometry.Bounds.Top);
 
-                        layer.AddAdornment(AdornmentPositioningBehavior.TextRelative, span, null, image, null);
+                        _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative, span, null, image, null);
                     }
                 }
                 //Unable to find spaces or tabs at the end of the line, ignore the rest
@@ -180,21 +181,21 @@ namespace BlackSpace
 
         public void UpdateBrushesAndPens(Brush inSpacesBrush, Pen inSpacesPen, Brush inTabsBrush, Pen inTabsPen)
         {
-            spacesBrush = inSpacesBrush;
-            spacesPen = inSpacesPen;
-            tabsBrush = inTabsBrush;
-            tabsPen = inTabsPen;
+            _spacesBrush = inSpacesBrush;
+            _spacesPen = inSpacesPen;
+            _tabsBrush = inTabsBrush;
+            _tabsPen = inTabsPen;
 
             RedrawAllAdornments();
         }
 
         public void RedrawAllAdornments()
         {
-            if (layer == null || view == null || view.TextViewLines == null) { return; }
+            if (_layer == null || _view == null || _view.TextViewLines == null) { return; }
 
             //Redraw all adornments
-            layer.RemoveAllAdornments();
-            foreach (ITextViewLine line in view.TextViewLines)
+            _layer.RemoveAllAdornments();
+            foreach (ITextViewLine line in _view.TextViewLines)
             {
                 CreateVisuals(line);
             }
