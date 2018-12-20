@@ -50,6 +50,31 @@ namespace BlackSpace
         private Brush _tabsBrush;
         private Pen _tabsPen;
 
+        private Brush GetBrushForChar(char ch)
+        {
+            switch (ch)
+            {
+                case ' ':
+                    return _spacesBrush;
+                case '\t':
+                    return _tabsBrush;
+                default:
+                    throw new ArgumentException($"No brush for character '{ch}'");
+            }
+        }
+        private Pen GetPenForChar(char ch)
+        {
+            switch (ch)
+            {
+                case ' ':
+                    return _spacesPen;
+                case '\t':
+                    return _tabsPen;
+                default:
+                    throw new ArgumentException($"No pen for character '{ch}'");
+            }
+        }
+
         public static BlackSpaceOptionsPackage Package
         {
             get;
@@ -138,44 +163,71 @@ namespace BlackSpace
             // Ignore empty lines
             if (line.Length == 0)  return;
 
-            // ++ RADISH: Ignore lines that are only whitespace
+            // Ignore lines that are only whitespace
             var lineText = new SnapshotSpan(_view.TextSnapshot, Span.FromBounds(line.Start, line.End)).GetText();
             if (String.IsNullOrWhiteSpace(lineText))  return;
+            
+            // start with the character at the end of the line
+            int charIndex = line.End - 1;
+            char charValue = _view.TextSnapshot[charIndex];
 
-            // Loop through each character from end to beginning, and place a box around spaces and tabs at the end of lines
-            for (int charIndex = line.End - 1; charIndex >= line.Start; --charIndex)
+            // if it's a tab or space, place a box around it AND all preceding characters of the same value
+            // (so consecutive spaces share one box, and consecutive tabs the same)
+            while (charIndex >= line.Start && (charValue == ' ' || charValue == '\t'))
             {
-                bool bIsSpace = (_view.TextSnapshot[charIndex] == ' ');
-                bool bIsTab = (_view.TextSnapshot[charIndex] == '\t');
-                if (bIsSpace || bIsTab)
-                {
-                    var span = new SnapshotSpan(_view.TextSnapshot, Span.FromBounds(charIndex, charIndex + 1));
-                    Geometry geometry = _view.TextViewLines.GetMarkerGeometry(span);
-                    if (geometry != null)
-                    {
-                        var drawing = new GeometryDrawing(bIsSpace ? _spacesBrush : _tabsBrush, bIsSpace ? _spacesPen : _tabsPen, geometry);
-                        drawing.Freeze();
+                // draw the box and get the index of the "last" character in the box; store the index of the character BEFORE that as the one we'll look at next
+                charIndex = AdornConsecutiveCharAndGetLastIndex(charValue, charIndex, line.Start) - 1;
 
-                        var drawingImage = new DrawingImage(drawing);
-                        drawingImage.Freeze();
+                if (charIndex < 0)  break; // just in case
 
-                        var image = new Image
-                        {
-                            Source = drawingImage,
-                        };
+                // get the character at the next index
+                charValue = _view.TextSnapshot[charIndex];
 
-                        // Align the image with the top of the bounds of the text geometry
-                        Canvas.SetLeft(image, geometry.Bounds.Left);
-                        Canvas.SetTop(image, geometry.Bounds.Top);
+                // with the new values of charIndex and charValue, if the while condition is still true then the next loop will draw another box
+            }
+        }
 
-                        _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative, span, null, image, null);
-                    }
-                }
-                //Unable to find spaces or tabs at the end of the line, ignore the rest
+        private int AdornConsecutiveCharAndGetLastIndex(char consecutiveChar, int firstIndex, int startOfLine)
+        {
+            int lastIndex = firstIndex;
+
+            for (int charIndex = firstIndex - 1; charIndex >= startOfLine; --charIndex)
+            {
+                var charValue = _view.TextSnapshot[charIndex];
+
+                if (charValue == consecutiveChar)
+                    lastIndex = charIndex;
                 else
+                    break;
+            }
+
+            // this method loops in reverse, so its "last" and "first" mean the opposite of what they do for AdornSpan
+            AdornSpan(lastIndex, firstIndex + 1, GetBrushForChar(consecutiveChar), GetPenForChar(consecutiveChar));
+
+            return lastIndex;
+        }
+        private void AdornSpan(int spanStart, int spanEnd, Brush brush, Pen pen)
+        {
+            var span = new SnapshotSpan(_view.TextSnapshot, Span.FromBounds(spanStart, spanEnd));
+            Geometry geometry = _view.TextViewLines.GetMarkerGeometry(span);
+            if (geometry != null)
+            {
+                var drawing = new GeometryDrawing(brush, pen, geometry);
+                drawing.Freeze();
+
+                var drawingImage = new DrawingImage(drawing);
+                drawingImage.Freeze();
+
+                var image = new Image
                 {
-                    return;
-                }
+                    Source = drawingImage,
+                };
+
+                // Align the image with the top of the bounds of the text geometry
+                Canvas.SetLeft(image, geometry.Bounds.Left);
+                Canvas.SetTop(image, geometry.Bounds.Top);
+
+                _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative, span, null, image, null);
             }
         }
 
