@@ -121,16 +121,16 @@ namespace BlackSpace
             else
             {
                 // Create the pen and brush to color the boxes around the end-of-line whitespace
-                _spacesBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x95));
+                _spacesBrush = new SolidColorBrush(Constants.DefaultSpacesBackgroundColor.ToMediaColor());
                 _spacesBrush.Freeze();
-                var spacesPenBrush = new SolidColorBrush(Color.FromArgb(0xff, 0x2b, 0x00, 0xb5));
+                var spacesPenBrush = new SolidColorBrush(Constants.DefaultSpacesBorderColor.ToMediaColor());
                 spacesPenBrush.Freeze();
                 _spacesPen = new Pen(spacesPenBrush, 1.0);
                 _spacesPen.Freeze();
 
-                _tabsBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x65));
+                _tabsBrush = new SolidColorBrush(Constants.DefaultTabsBackgroundColor.ToMediaColor());
                 _tabsBrush.Freeze();
-                var tabsPenBrush = new SolidColorBrush(Color.FromArgb(0xff, 0x3b, 0x00, 0x85));
+                var tabsPenBrush = new SolidColorBrush(Constants.DefaultTabsBorderColor.ToMediaColor());
                 tabsPenBrush.Freeze();
                 _tabsPen = new Pen(tabsPenBrush, 1.0);
                 _tabsPen.Freeze();

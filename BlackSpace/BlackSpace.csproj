@@ -61,6 +61,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BlackSpaceOptionsPackage.cs" />
+    <Compile Include="ColorExtensions.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="DeleteWhiteSpaceWhenSavingCommandHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="BlackSpaceAdornment.cs" />

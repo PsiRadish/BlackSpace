@@ -27,6 +27,9 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using EnvDTE; //DocumentEvents
 
+using DrawingColor = System.Drawing.Color;
+using MediaColor = System.Windows.Media.Color;
+
 namespace BlackSpace
 {
     public class BlackSpaceColorConverter : System.Drawing.ColorConverter
@@ -44,32 +47,32 @@ namespace BlackSpace
 
     public class OptionDialogPage : DialogPage
     {
-        BlackSpaceOptionsPackage package = null;
+        BlackSpaceOptionsPackage _package = null;
 
         //Colors and thickness to use in creating the brushes and pens
-        protected System.Drawing.Color spacesBackgroundColor = System.Drawing.Color.FromArgb(0xa0, 0x2b, 0x00, 0x95);
-        protected System.Drawing.Color spacesBorderColor = System.Drawing.Color.FromArgb(0xff, 0x2b, 0x00, 0xb5);
-        protected double spacesBorderThickness = 1.0;
-        protected System.Drawing.Color tabsBackgroundColor = System.Drawing.Color.FromArgb(0xa0, 0x2b, 0x00, 0x65);
-        protected System.Drawing.Color tabsBorderColor = System.Drawing.Color.FromArgb(0xff, 0x3b, 0x00, 0x85);
-        protected double tabsBorderThickness = 1.0;
+        protected DrawingColor _spacesBackgroundColor = Constants.DefaultSpacesBackgroundColor;
+        protected DrawingColor _spacesBorderColor = Constants.DefaultSpacesBorderColor;
+        protected double _spacesBorderThickness = 1.0;
+        protected DrawingColor _tabsBackgroundColor = Constants.DefaultTabsBackgroundColor;
+        protected DrawingColor _tabsBorderColor = Constants.DefaultTabsBorderColor;
+        protected double _tabsBorderThickness = 1.0;
 
         [Category("General")]
         [DisplayName("Spaces: Background Color")]
         [Description("Color used for the background brush on end-of-line spaces.")]
-        public System.Drawing.Color SpacesBackgroundColor
+        public DrawingColor SpacesBackgroundColor
         {
-            get { return spacesBackgroundColor; }
-            set { spacesBackgroundColor = value; }
+            get { return _spacesBackgroundColor; }
+            set { _spacesBackgroundColor = value; }
         }
 
         [Category("General")]
         [DisplayName("Spaces: Border Color")]
         [Description("Color used for the border/stroke pen on end-of-line spaces.")]
-        public System.Drawing.Color SpacesBorderColor
+        public DrawingColor SpacesBorderColor
         {
-            get { return spacesBorderColor; }
-            set { spacesBorderColor = value; }
+            get { return _spacesBorderColor; }
+            set { _spacesBorderColor = value; }
         }
 
         [Category("General")]
@@ -77,26 +80,26 @@ namespace BlackSpace
         [Description("Thickness of the line/stroke used for the border/stroke pen on end-of-line spaces.")]
         public double SpacesBorderThickness
         {
-            get { return spacesBorderThickness; }
-            set { spacesBorderThickness = value; }
+            get { return _spacesBorderThickness; }
+            set { _spacesBorderThickness = value; }
         }
 
         [Category("General")]
         [DisplayName("Tabs: Background Color")]
         [Description("Color used for the background brush on end-of-line tabs.")]
-        public System.Drawing.Color TabsBackgroundColor
+        public DrawingColor TabsBackgroundColor
         {
-            get { return tabsBackgroundColor; }
-            set { tabsBackgroundColor = value; }
+            get { return _tabsBackgroundColor; }
+            set { _tabsBackgroundColor = value; }
         }
 
         [Category("General")]
         [DisplayName("Tabs: Border Color")]
         [Description("Color used for the border/stroke pen on end-of-line tabs.")]
-        public System.Drawing.Color TabsBorderColor
+        public DrawingColor TabsBorderColor
         {
-            get { return tabsBorderColor; }
-            set { tabsBorderColor = value; }
+            get { return _tabsBorderColor; }
+            set { _tabsBorderColor = value; }
         }
 
         [Category("General")]
@@ -104,8 +107,8 @@ namespace BlackSpace
         [Description("Thickness of the line/stroke used for the border/stroke pen on end-of-line tabs.")]
         public double TabsBorderThickness
         {
-            get { return tabsBorderThickness; }
-            set { tabsBorderThickness = value; }
+            get { return _tabsBorderThickness; }
+            set { _tabsBorderThickness = value; }
         }
 
         [Category("General")]
@@ -121,21 +124,21 @@ namespace BlackSpace
             base.LoadSettingsFromStorage();
 
             //Only color settings have issues with auto-loading, so we need to manually load and convert these
-            SpacesBackgroundColor = UpdateColorSetting(nameof(SpacesBackgroundColor), spacesBackgroundColor);
-            SpacesBorderColor = UpdateColorSetting(nameof(SpacesBorderColor), spacesBorderColor);
-            TabsBackgroundColor = UpdateColorSetting(nameof(TabsBackgroundColor), tabsBackgroundColor);
-            TabsBorderColor = UpdateColorSetting(nameof(TabsBorderColor), tabsBorderColor);
+            SpacesBackgroundColor = UpdateColorSetting(nameof(SpacesBackgroundColor), _spacesBackgroundColor);
+            SpacesBorderColor = UpdateColorSetting(nameof(SpacesBorderColor), _spacesBorderColor);
+            TabsBackgroundColor = UpdateColorSetting(nameof(TabsBackgroundColor), _tabsBackgroundColor);
+            TabsBorderColor = UpdateColorSetting(nameof(TabsBorderColor), _tabsBorderColor);
 
             UpdateBrushesAndPens();
         }
 
         public void RegisterPackage(BlackSpaceOptionsPackage inPackage)
         {
-            package = inPackage;
+            _package = inPackage;
         }
 
         protected const string PROP_LOCATION = "ApplicationPrivateSettings\\BlackSpace\\OptionDialogPage";
-        protected System.Drawing.Color UpdateColorSetting(string name, System.Drawing.Color defaultColor)
+        protected DrawingColor UpdateColorSetting(string name, DrawingColor defaultColor)
         {
             using (var regKey = VSRegistry.RegistryRoot(__VsLocalRegistryType.RegType_UserSettings))
             {
@@ -150,11 +153,10 @@ namespace BlackSpace
 
                     try
                     {
-                        BlackSpaceColorConverter cc = new BlackSpaceColorConverter();
+                        var cc = new BlackSpaceColorConverter();
                         object Obj = cc.ConvertFromString(prop);
-                        if (Obj != null && Obj is System.Drawing.Color)
+                        if (Obj != null && Obj is DrawingColor color)
                         {
-                            System.Drawing.Color color = (System.Drawing.Color)Obj;
                             if (!color.IsEmpty)
                             {
                                 return color;
@@ -163,7 +165,7 @@ namespace BlackSpace
                     }
                     catch (Exception e)
                     {
-                        System.Console.WriteLine(e.Message);
+                        Console.WriteLine(e.Message);
                         return defaultColor;
                     }
                     return defaultColor;
@@ -171,32 +173,27 @@ namespace BlackSpace
             }
         }
 
-        public static Color ToMediaColor(System.Drawing.Color inColor)
-        {
-            return Color.FromArgb(inColor.A, inColor.R, inColor.G, inColor.B);
-        }
-
         protected virtual void UpdateBrushesAndPens()
         {
             //Create the brushes and pens to color the end-of-line white-spaces
-            var spacesBrush = new SolidColorBrush(ToMediaColor(SpacesBackgroundColor));
+            var spacesBrush = new SolidColorBrush(SpacesBackgroundColor.ToMediaColor());
             spacesBrush.Freeze();
-            var spacesPenBrush = new SolidColorBrush(ToMediaColor(SpacesBorderColor));
+            var spacesPenBrush = new SolidColorBrush(SpacesBorderColor.ToMediaColor());
             spacesPenBrush.Freeze();
             var spacesPen = new Pen(spacesPenBrush, SpacesBorderThickness);
             spacesPen.Freeze();
 
-            var tabsBrush = new SolidColorBrush(ToMediaColor(TabsBackgroundColor));
+            var tabsBrush = new SolidColorBrush(TabsBackgroundColor.ToMediaColor());
             tabsBrush.Freeze();
-            var tabsPenBrush = new SolidColorBrush(ToMediaColor(TabsBorderColor));
+            var tabsPenBrush = new SolidColorBrush(TabsBorderColor.ToMediaColor());
             tabsPenBrush.Freeze();
             var tabsPen = new Pen(tabsPenBrush, TabsBorderThickness);
             tabsPen.Freeze();
 
             //Generate the brushes and pens
-            if (package != null)
+            if (_package != null)
             {
-                package.UpdateBrushesAndPens(spacesBrush, spacesPen, tabsBrush, tabsPen);
+                _package.UpdateBrushesAndPens(spacesBrush, spacesPen, tabsBrush, tabsPen);
             }
         }
     }
@@ -221,7 +218,7 @@ namespace BlackSpace
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideAutoLoad(UIContextGuids80.SolutionExists)]
-    [Guid(BlackSpaceOptionsPackage.PackageGuidString)]
+    [Guid(PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideOptionPage(typeof(OptionDialogPage), "Black Space", "General", 0, 0, true)]
     public sealed class BlackSpaceOptionsPackage : Package
@@ -254,14 +251,14 @@ namespace BlackSpace
 
         public void UpdateBrushesAndPens(Brush inSpacesBrush, Pen inSpacesPen, Brush inTabsBrush, Pen inTabsPen)
         {
-            spacesBrush = inSpacesBrush;
-            spacesPen = inSpacesPen;
-            tabsBrush = inTabsBrush;
-            tabsPen = inTabsPen;
+            _spacesBrush = inSpacesBrush;
+            _spacesPen = inSpacesPen;
+            _tabsBrush = inTabsBrush;
+            _tabsPen = inTabsPen;
 
-            if (adornment != null)
+            if (_adornment != null)
             {
-                adornment.UpdateBrushesAndPens(spacesBrush, spacesPen, tabsBrush, tabsPen);
+                _adornment.UpdateBrushesAndPens(_spacesBrush, _spacesPen, _tabsBrush, _tabsPen);
             }
         }
 
@@ -308,7 +305,7 @@ namespace BlackSpace
             //    VSSolutionEvents.Renamed += VSSolutionEvents_Renamed;
             //}
 
-            OptionDialogPage page = (OptionDialogPage)GetDialogPage(typeof(OptionDialogPage));
+            var page = (OptionDialogPage)GetDialogPage(typeof(OptionDialogPage));
             if (page != null)
             {
                 page.RegisterPackage(this);
@@ -328,7 +325,7 @@ namespace BlackSpace
 
         private IVsOutputWindowPane GetOutputPane(Guid paneGuid, string title, bool visible, bool clearWithSolution, string message)
         {
-            IVsOutputWindow output = (IVsOutputWindow)GetService(typeof(SVsOutputWindow));
+            var output = (IVsOutputWindow)GetService(typeof(SVsOutputWindow));
             IVsOutputWindowPane pane;
             output.CreatePane(ref paneGuid, title, Convert.ToInt32(visible), Convert.ToInt32(clearWithSolution));
             output.GetPane(ref paneGuid, out pane);
@@ -454,23 +451,23 @@ namespace BlackSpace
         //    WriteToOutputWindow(Microsoft.VisualStudio.VSConstants.OutputWindowPaneGuid.GeneralPane_guid, "Saved: " + Document.FullName);
         //}
 
-        BlackSpaceAdornment adornment = null;
+        BlackSpaceAdornment _adornment = null;
 
-        Brush spacesBrush = null;
-        Pen spacesPen = null;
-        Brush tabsBrush = null;
-        Pen tabsPen = null;
+        Brush _spacesBrush = null;
+        Pen _spacesPen = null;
+        Brush _tabsBrush = null;
+        Pen _tabsPen = null;
 
         public Brush SpacesBrush
         {
             get
             {
-                if (spacesBrush == null)
+                if (_spacesBrush == null)
                 {
-                    spacesBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x95));
-                    spacesBrush.Freeze();
+                    _spacesBrush = new SolidColorBrush(Constants.DefaultSpacesBackgroundColor.ToMediaColor());
+                    _spacesBrush.Freeze();
                 }
-                return spacesBrush;
+                return _spacesBrush;
             }
         }
 
@@ -478,14 +475,14 @@ namespace BlackSpace
         {
             get
             {
-                if (spacesPen == null)
+                if (_spacesPen == null)
                 {
-                    var spacesPenBrush = new SolidColorBrush(Color.FromArgb(0xff, 0x2b, 0x00, 0xb5));
+                    var spacesPenBrush = new SolidColorBrush(Constants.DefaultSpacesBorderColor.ToMediaColor());
                     spacesPenBrush.Freeze();
-                    spacesPen = new Pen(spacesPenBrush, 1.0);
-                    spacesPen.Freeze();
+                    _spacesPen = new Pen(spacesPenBrush, 1.0);
+                    _spacesPen.Freeze();
                 }
-                return spacesPen;
+                return _spacesPen;
             }
         }
 
@@ -493,12 +490,12 @@ namespace BlackSpace
         {
             get
             {
-                if (tabsBrush == null)
+                if (_tabsBrush == null)
                 {
-                    tabsBrush = new SolidColorBrush(Color.FromArgb(0xa0, 0x2b, 0x00, 0x65));
-                    tabsBrush.Freeze();
+                    _tabsBrush = new SolidColorBrush(Constants.DefaultTabsBackgroundColor.ToMediaColor());
+                    _tabsBrush.Freeze();
                 }
-                return tabsBrush;
+                return _tabsBrush;
             }
         }
 
@@ -506,21 +503,21 @@ namespace BlackSpace
         {
             get
             {
-                if (tabsPen == null)
+                if (_tabsPen == null)
                 {
-                    var tabsPenBrush = new SolidColorBrush(Color.FromArgb(0xff, 0x3b, 0x00, 0x85));
+                    var tabsPenBrush = new SolidColorBrush(Constants.DefaultTabsBorderColor.ToMediaColor());
                     tabsPenBrush.Freeze();
-                    tabsPen = new Pen(tabsPenBrush, 1.0);
-                    tabsPen.Freeze();
+                    _tabsPen = new Pen(tabsPenBrush, 1.0);
+                    _tabsPen.Freeze();
                 }
-                return tabsPen;
+                return _tabsPen;
             }
         }
 
         internal void RegisterAdornment(BlackSpaceAdornment inAdornment)
         {
-            adornment = inAdornment;
-            adornment.UpdateBrushesAndPens(spacesBrush, spacesPen, tabsBrush, tabsPen);
+            _adornment = inAdornment;
+            _adornment.UpdateBrushesAndPens(_spacesBrush, _spacesPen, _tabsBrush, _tabsPen);
         }
         #endregion
     }
