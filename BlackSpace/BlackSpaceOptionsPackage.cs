@@ -27,8 +27,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using EnvDTE; //DocumentEvents
 
-using DrawingColor = System.Drawing.Color;
-using MediaColor = System.Windows.Media.Color;
+using Color = System.Drawing.Color;
 
 namespace BlackSpace
 {
@@ -50,17 +49,17 @@ namespace BlackSpace
         BlackSpaceOptionsPackage _package = null;
 
         //Colors and thickness to use in creating the brushes and pens
-        protected DrawingColor _spacesBackgroundColor = Constants.DefaultSpacesBackgroundColor;
-        protected DrawingColor _spacesBorderColor = Constants.DefaultSpacesBorderColor;
+        protected Color _spacesBackgroundColor = Constants.DefaultSpacesBackgroundColor;
+        protected Color _spacesBorderColor = Constants.DefaultSpacesBorderColor;
         protected double _spacesBorderThickness = 1.0;
-        protected DrawingColor _tabsBackgroundColor = Constants.DefaultTabsBackgroundColor;
-        protected DrawingColor _tabsBorderColor = Constants.DefaultTabsBorderColor;
+        protected Color _tabsBackgroundColor = Constants.DefaultTabsBackgroundColor;
+        protected Color _tabsBorderColor = Constants.DefaultTabsBorderColor;
         protected double _tabsBorderThickness = 1.0;
 
         [Category("General")]
         [DisplayName("Spaces: Background Color")]
         [Description("Color used for the background brush on end-of-line spaces.")]
-        public DrawingColor SpacesBackgroundColor
+        public Color SpacesBackgroundColor
         {
             get { return _spacesBackgroundColor; }
             set { _spacesBackgroundColor = value; }
@@ -69,7 +68,7 @@ namespace BlackSpace
         [Category("General")]
         [DisplayName("Spaces: Border Color")]
         [Description("Color used for the border/stroke pen on end-of-line spaces.")]
-        public DrawingColor SpacesBorderColor
+        public Color SpacesBorderColor
         {
             get { return _spacesBorderColor; }
             set { _spacesBorderColor = value; }
@@ -87,7 +86,7 @@ namespace BlackSpace
         [Category("General")]
         [DisplayName("Tabs: Background Color")]
         [Description("Color used for the background brush on end-of-line tabs.")]
-        public DrawingColor TabsBackgroundColor
+        public Color TabsBackgroundColor
         {
             get { return _tabsBackgroundColor; }
             set { _tabsBackgroundColor = value; }
@@ -96,7 +95,7 @@ namespace BlackSpace
         [Category("General")]
         [DisplayName("Tabs: Border Color")]
         [Description("Color used for the border/stroke pen on end-of-line tabs.")]
-        public DrawingColor TabsBorderColor
+        public Color TabsBorderColor
         {
             get { return _tabsBorderColor; }
             set { _tabsBorderColor = value; }
@@ -138,7 +137,7 @@ namespace BlackSpace
         }
 
         protected const string PROP_LOCATION = "ApplicationPrivateSettings\\BlackSpace\\OptionDialogPage";
-        protected DrawingColor UpdateColorSetting(string name, DrawingColor defaultColor)
+        protected Color UpdateColorSetting(string name, Color defaultColor)
         {
             using (var regKey = VSRegistry.RegistryRoot(__VsLocalRegistryType.RegType_UserSettings))
             {
@@ -155,7 +154,7 @@ namespace BlackSpace
                     {
                         var cc = new BlackSpaceColorConverter();
                         object Obj = cc.ConvertFromString(prop);
-                        if (Obj != null && Obj is DrawingColor color)
+                        if (Obj != null && Obj is Color color)
                         {
                             if (!color.IsEmpty)
                             {
